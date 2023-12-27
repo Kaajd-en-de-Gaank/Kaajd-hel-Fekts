@@ -1,4 +1,4 @@
-### Grafiekjes obv de csv output van wa-stats.py
+### Grafiekjes op basis van de csv output van wa-stats.py (die moet dus eerst)
 
 ## Waar gaan we mee klooien?
 import pandas as pd
@@ -11,15 +11,15 @@ import os
 import numpy as np
 import statsmodels.api as sm
 from wordcloud import WordCloud
-# import networkx as nx
+# import networkx as nx # voor network graphs, maar die vond ik niet zo mooi geworden, dus eruit gehaald
 import emoji
 from textblob import TextBlob
-import nltk
-import re
-import argparse
+import nltk # voor NL common woorden
+import re # regex voor emoji
+import argparse # voor cli path
 
-## Load the data
-# Add argument parser to get the file path from the command line
+## Load data
+# Add argument parser to optionally get the file path from the command line
 parser = argparse.ArgumentParser()
 parser.add_argument("file_path", help="The path to the .txt file")
 args = parser.parse_args()
@@ -28,23 +28,24 @@ args = parser.parse_args()
 input_dir = os.path.dirname(args.file_path)
 input_file_name = os.path.splitext(os.path.basename(args.file_path))[0]
 
-# Define the output directory
+# output dir
 output_dir = os.path.join(input_dir, input_file_name, 'output')
 
-# Find the most recent CSV file in the output directory
+# Find most recent CSV file in output dir
 list_of_files = glob.glob(os.path.join(output_dir, 'raw-data.csv')) 
 latest_file = max(list_of_files, key=os.path.getctime)
 
-# Read the CSV file
+# Read CSV
 df = pd.read_csv(latest_file)
 
-## Convert 'Date' and 'Time' to datetime format
+## Convert 'Date' and 'Time' to datetime format b/c of WhatsApp date format
 df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
 df['Time'] = pd.to_datetime(df['Time'], format='%H:%M').dt.time
 
-################
-#### Graphs ####
-################
+####################
+####   Graphs   ####
+#### (woehoe!!) ####
+####################
 
 ## Message Frequency Over Time
 # Convert 'Date' to datetime format
@@ -58,7 +59,7 @@ date_counts['Days'] = (date_counts['Date'] - date_counts['Date'][0]).dt.days
 plt.figure(figsize=(10, 6))
 # Scatter plot
 plt.scatter(date_counts['Date'], date_counts['Count'], s=5, color='blue')
-# LOWESS fit
+# lowess fit
 lowess = sm.nonparametric.lowess(date_counts['Count'], date_counts['Days'], frac=0.1)
 plt.plot(date_counts['Date'], lowess[:, 1], color='red')
 plt.title('Message Frequency Over Time')
@@ -80,7 +81,7 @@ plt.ylabel('Number of Messages')
 plt.savefig(os.path.join(output_dir, 'most_active_times.png'))
 plt.close()
 
-## Conversation Starters
+## Conversation Starters / wie begint het vaaktse een gesprek (op basis van een tijdje geen berichten, wie begint er dan)
 df['Datetime'] = pd.to_datetime(df['Date'].astype(str) + ' ' + df['Time'].astype(str))
 df['Time_Diff'] = df['Datetime'].diff()
 df['Conversation_Starter'] = df['Time_Diff'] > timedelta(hours=1)
@@ -94,13 +95,13 @@ plt.tight_layout()
 plt.savefig(os.path.join(output_dir, 'conversation_starters.png'))
 plt.close()
 
-## Message Length Distribution
+## Message Length Distribution / histogr
 # Calculate the message lengths
 df['Message_Length'] = df['Message'].apply(len)
 # Determine a sensible cutoff for the message length to avoid a long tail in the histogram
 cutoff_percentile = 95
 cutoff_length = np.percentile(df['Message_Length'], cutoff_percentile)
-# Plotting the histogram
+# Plot histogram
 plt.figure(figsize=(10, 6))
 df['Message_Length'].plot(kind='hist', bins=30, range=(0, cutoff_length))
 plt.title('Message Length Distribution')
@@ -113,22 +114,22 @@ plt.close()
 # Combine all messages into one large text
 text = ' '.join(df['Message'])
 # Define stopwords
-# nltk.download('stopwords') # Download stopwords if not already downloaded
+# nltk.download('stopwords') # commented out b/c already downloaded on server, but uncomment if running first time
 from nltk.corpus import stopwords
 dutch_stops = set(stopwords.words('dutch'))
 custom_stops = {'Media', 'weggelaten', 'youtu.be', 'youtu', 'watch', 'alleen', 'html', 'denk', 'V', 'be', 'http', 'https', 'we', 'gaan', 'zeg', 'zegt', 'zeggen', 'wel', 'even', 'gaat', 'weer', 'zien', 'komt', 'kom', 'komen', 'zal', 'mee', 'www', 'nl', 'com', 'youtube', 'goed'}
 custom_stops.update(dutch_stops)  # Combine with Dutch stopwords
-# Generate the word cloud
+# Generate word cloud
 wordcloud = WordCloud(stopwords=custom_stops, width=800, height=400).generate(text)
-# Display the word cloud
+# Display / save word cloud
 plt.figure(figsize=(15, 7))
 plt.imshow(wordcloud, interpolation='bilinear')
 plt.axis('off')
 plt.savefig(os.path.join(output_dir, 'wordcloud.png'))
 plt.close()
 
-## Emoji Analysis
-# Define a function to extract emojis from text
+## Emoji Analyse
+# Define a function to extract emojis from text (emoji package werkte niet zoals verwacht, misschien vanwege UTF-8-extd?
 def extract_emojis(s):
     emoji_pattern = re.compile("["
                            u"\U0001F600-\U0001F64F"  # emoticons
@@ -145,17 +146,17 @@ def extract_emojis(s):
                            "]+", flags=re.UNICODE)
     return emoji_pattern.findall(s)
 
-# Apply the corrected function
+# Apply function
 df['Emojis'] = df['Message'].apply(extract_emojis)
 
-# Flatten the list of emojis and count them
+# Flatten list of emoji and count them
 all_emojis = sum(df['Emojis'], [])
 emoji_counts = pd.Series(all_emojis).value_counts().head(10)
 
-# Replace the emoji characters with their textual description in the bar chart
+# Replace emoji characters with textual description in the bar chart (matplotlib doesn't have font support, as far as I can tell)
 emoji_counts.index = [emoji.demojize(e).replace(":", "").replace("_", " ") for e in emoji_counts.index]
 
-# Plotting top 10 emojis with descriptions
+# Plot top 10 emoji with descriptions texts
 emoji_counts.plot(kind='bar', figsize=(10, 6))
 plt.title('Top 10 Emojis')
 # plt.xlabel('Emoji')
@@ -165,12 +166,13 @@ plt.xticks(rotation=45, ha='right')
 plt.savefig(os.path.join(output_dir, 'top_emojis.png'), bbox_inches='tight')
 plt.close()
 
-## Sentiment analysis
+## Sentiment analysis (high = positive, low = negative)
+# Not sure how well this actually works for languages other than English
 df['Polarity'] = df['Message'].apply(lambda message: TextBlob(message).sentiment.polarity)
-# Updated rolling window size
+# Rolling window size:
 df['Polarity_Rolling'] = df['Polarity'].rolling(window=500, center=True).mean()
 
-# Plotting with a timeline and only years as x-axis labels
+# Plot with timeline and only years as x labels
 fig, ax = plt.subplots(figsize=(14, 7))
 ax.plot(df.index, df['Polarity'], label='Polarity', alpha=0.5)
 ax.plot(df.index, df['Polarity_Rolling'], label='Trend', color='red', linewidth=2)
@@ -180,11 +182,12 @@ ax.set_ylabel('Sentiment Polarity')
 ax.legend()
 ax.grid(True)
 
+# Setting dates on x axis is screwy, so just left it out for now:
 # Set x-axis with only years
 # ax.xaxis.set_major_locator(mdates.YearLocator())
 # ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
 
-# Improve y-axis with annotations
+# y-axis annotations (positive, negative, around 0 = neutral)
 ax.annotate('Positive', xy=(0.1, 0.9), xycoords='axes fraction', color='green')
 ax.annotate('Negative', xy=(0.1, 0.1), xycoords='axes fraction', color='red')
 
