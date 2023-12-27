@@ -1,3 +1,5 @@
+# Bezig met flask web pagina voor upload / output, zodat het niet via Google drive hoeft. Maar nog niet helemaal functioneel.
+
 from flask import Flask, request, render_template, send_from_directory, redirect, url_for
 import os
 import subprocess
@@ -5,6 +7,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
+# Pagina voor upload:
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -23,9 +26,10 @@ def upload_file():
             return redirect(url_for('output', filename=filename)) # Redirect to output page
     return render_template('upload.html')
 
+# pagina voor output als de scripts klaar zijn
 @app.route('/static/<filename>') # Output page with filename as parameter (e.g. output/WhatsApp Chat with John.txt)
 def output(filename): 
-    # Retrieve and display the output from your workflow
+    # Retrieve and display the output:
     return render_template('output.html', filename=filename)
 
 if __name__ == '__main__':
