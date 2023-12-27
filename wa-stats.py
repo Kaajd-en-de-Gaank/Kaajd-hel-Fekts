@@ -14,22 +14,22 @@ import argparse
 import os
 
 def analyze_chat(file_path):
-    # Generate the timestamp
+    # Generate timestamp
     timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
 
     # Create output directory in the same location as the input file
     output_dir = os.path.join(os.path.dirname(file_path), os.path.splitext(os.path.basename(file_path))[0], 'output')
     os.makedirs(output_dir, exist_ok=True)
 
-    # Regular expression to match each line of the chat
+    # Regex to match each line of the chat (separate individual messages, but considering multi-line / line break messages)
     line_pattern = re.compile(r"^\d{2}-\d{2}-\d{4} \d{2}:\d{2} - (.*?): (.*)$")
 
-    # Initialize dictionaries for storing counts and character lengths
+    # Initialize dicts for counts and char length
     message_count = defaultdict(int)
     total_char_count_per_person = defaultdict(int)
     total_char_count_all = 0
 
-    # Initialize a list for storing the raw data
+    # Initialize list for raw data
     raw_data = []
 
     # Process the file
@@ -51,10 +51,10 @@ def analyze_chat(file_path):
                         total_char_count_all += len(message)
                 previous_line = line
             else:
-                # If the line does not match the pattern, concatenate it to the previous line
+                # If the line does not match the pattern, concat it to the previous line
                 previous_line += line
 
-        # Add the last line to the raw data
+        # Add last line to the raw data
         if previous_line:
             date_time, person_message = previous_line.split(' - ', 1)
             date, time = date_time.split(' ', 1)
@@ -66,14 +66,14 @@ def analyze_chat(file_path):
                 total_char_count_per_person[person_name] += len(message)
                 total_char_count_all += len(message)
 
-    # Create a DataFrame for the raw data
+    # Create DataFrame for raw data
     raw_data_df = pd.DataFrame(raw_data, columns=['Date', 'Time', 'Person', 'Message'])
 
-    # Calculate the average character length per message per person
+    # Calculate avg. char length / message / person
     average_char_length_per_person = {person: total_char_count_per_person[person] / message_count[person] 
                                      for person in message_count}
 
-    # Create a DataFrame for the chat statistics
+    # Create DataFrame for chat stats
     chat_stats_df = pd.DataFrame({
         'Person': list(message_count.keys()),
         'Total Messages': list(message_count.values()),
@@ -81,7 +81,7 @@ def analyze_chat(file_path):
         'Total Characters': list(total_char_count_per_person.values())
     })
 
-    # Calculate the total number of messages and the overall average message length
+    # Calculate total number of messages and overall average message length
     total_messages = sum(message_count.values())
     overall_average_message_length = total_char_count_all / total_messages
 
@@ -91,16 +91,13 @@ def analyze_chat(file_path):
                  'Total Characters': total_char_count_all}
     chat_stats_df = chat_stats_df.append(total_row, ignore_index=True)
 
-    # Generate the timestamp
-    #timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-
     # Convert DataFrame to JSON
     chat_stats_json = chat_stats_df.to_json(orient='records')
 
-    # Print formatted text to stdout / console (returned to n8n)
+    # Print formatted text to stdout / console (returned to n8n for optional interface with Google drive)
     print(chat_stats_df.to_string(index=False))
 
-    # Save the raw data to a CSV file
+    # Save the raw data to a CSV file (used by WA-graphs.py)
     raw_data_csv_filename = os.path.join(output_dir, f'raw-data.csv')
     raw_data_df.to_csv(raw_data_csv_filename, index=False)
 
@@ -108,20 +105,20 @@ def analyze_chat(file_path):
     html_output_filename = os.path.join(output_dir, f'summary.html')
     chat_stats_df.to_html(html_output_filename, index=False)
 
-    # Save JSON data to a file
+    # Save JSON data to file
     json_output_filename = os.path.join(output_dir, f'summary.json')
     with open(json_output_filename, 'w') as json_file:
         json_file.write(chat_stats_json)
 
     return chat_stats_json
 
-# Parser for CLI path argument, defaults to the ./data/chat.txt file.
-parser = argparse.ArgumentParser(description='Analyze a Whatsapp chat export file.')
+# CLI path argument config, defaults to ./data/chat.txt file (no example in repo, bring your own!).
+parser = argparse.ArgumentParser(description='Analyze a Whatsapp chat export file (txt).')
 parser.add_argument('file_path', nargs='?', default='./data/chat.txt', 
                     help='the path to the chat export file')
 
-# Parse the command-line arguments
+# Parse CLI arguments
 args = parser.parse_args()
 
-# Use the function with the path to the chat export file
+# Use the function with the path to the txt chat export file
 chat_statistics = analyze_chat(args.file_path)
