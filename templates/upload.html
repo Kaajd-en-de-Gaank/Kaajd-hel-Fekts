@@ -1,7 +1,28 @@
+<!-- upload.html -->
 <!doctype html>
-<title>Upload new File</title>
-<h1>Upload new File</h1>
-<form method=post enctype=multipart/form-data>
-    <input type=file name=file>
-    <input type=submit value=Upload>
-</form>
+<html>
+<head>
+    <title>Upload new File</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload new File</h1>
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+            <div class="form-group">
+                <input type="file" name="file" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+        <div id="loading" style="display: none;">
+            <p>Processing...</p>
+        </div>
+    </div>
+    <script>
+    $('#upload-form').submit(function() {
+        $('#loading').show();
+    });
+    </script>
+</body>
+</html>
