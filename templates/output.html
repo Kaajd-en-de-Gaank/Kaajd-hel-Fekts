@@ -1,4 +1,31 @@
+<!-- output.html -->
 <!doctype html>
-<title>Output</title>
-<h1>Output</h1>
-<img src="{{ url_for('upload', filename=filename) }}" alt="Output">
+<html>
+<head>
+    <title>Output</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Output</h1>
+        {{ table_html|safe }}
+        <div class="my-3">
+            <a href="{{ url_for('static', filename=filename + '/output/raw-data.csv') }}" class="btn btn-primary">Download raw-data.csv</a>
+            <a href="{{ url_for('static', filename=filename + '/output/summary.json') }}" class="btn btn-primary">Download summary.json</a>
+        </div>
+        <div class="row">
+            {% for image in ['conversation_starters.png', 'message_length_distribution.png', 'messages_over_time.png', 'most_active_times.png', 'sentiment.png', 'top_emojis.png', 'wordcloud.png'] %}
+            <div class="col-sm-6">
+                <a href="{{ url_for('static', filename=filename + '/output/' + image) }}" data-lightbox="gallery" data-title="{{ image }}">
+                    <img src="{{ url_for('static', filename=filename + '/output/' + image) }}" alt="{{ image }}" class="img-fluid">
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox-plus-jquery.min.js"></script>
+</body>
+</html>
