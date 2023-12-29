@@ -1,0 +1,1 @@
+Deze directory is de upload directory voor de flask web app. Elke upload via de web app krijgt een timestamp en een eigen subdirectory hier met de output van wa-stats-flask.py en wa-graphs.py. Die worden vervolgens geladen via het output.html template.
